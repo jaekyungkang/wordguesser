@@ -11,6 +11,52 @@ import FormControl from "@mui/material/FormControl";
 
 import confetti from "canvas-confetti";
 
+const baseFont = "'Nunito', 'Helvetica Neue', Arial, sans-serif";
+
+const COLORS = {
+  blue: "#1D4ED8",
+  yellow: "#FBBF24",
+  orange: "#F97316",
+  black: "#111111",
+  white: "#FFFFFF",
+};
+
+// picks white text for blue/orange backgrounds, black text for yellow —
+// so every colored surface automatically gets a readable text color
+const bannerStyle = (bg, extra = {}) => ({
+  display: "inline-block",
+  backgroundColor: bg,
+  color: bg === COLORS.yellow ? COLORS.black : COLORS.white,
+  padding: "6px 20px",
+  borderRadius: 8,
+  fontFamily: baseFont,
+  fontWeight: 800,
+  ...extra,
+});
+
+const cardStyle = {
+  padding: 32,
+  maxWidth: 460,
+  margin: "48px auto",
+  backgroundColor: COLORS.white,
+  border: `4px solid ${COLORS.blue}`,
+  borderRadius: 16,
+  fontFamily: baseFont,
+  color: COLORS.black,
+};
+
+const primaryButtonStyle = {
+  backgroundColor: COLORS.blue,
+  color: COLORS.white,
+  fontFamily: baseFont,
+  fontSize: "1.1rem",
+  fontWeight: 700,
+  borderRadius: 8,
+  border: `2px solid ${COLORS.blue}`,
+  padding: "8px 24px",
+  textTransform: "none",
+};
+
 function App() {
   // i want difficulties to be a slider
   const DIFFICULTIES = [
@@ -67,6 +113,7 @@ function App() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebrationGif, setCelebrationGif] = useState("");
   const [usedWord, setUsedWord] = useState([]);
+  const [playerName, setPlayerName] = useState("");
 
   const KEYBOARD_LAYOUTS = {
     en: [
@@ -176,8 +223,6 @@ function App() {
     }
   };
 
-  const reset = () => setMode("pre-stage");
-
   // ADD DUCK CONFETTI
 
   // game
@@ -186,27 +231,75 @@ function App() {
   // if randomword does not include letter, then wrongguess++
   // display word = randomword
 
-  /* returning, playername, points game over button */
+  const reset = () => setMode("pre-stage");
+
+  const getKeyStyle = (letter) => {
+    const used = guessedLetters.includes(letter);
+    const wrong = used && !word.includes(letter);
+    const correct = used && !wrong;
+
+    let bg = COLORS.white;
+    let color = COLORS.black;
+    if (correct) {
+      bg = COLORS.yellow;
+      color = COLORS.black;
+    }
+    if (wrong) {
+      bg = COLORS.orange;
+      color = COLORS.white;
+    }
+
+    return {
+      fontFamily: baseFont,
+      fontWeight: 700,
+      minWidth: 56,
+      height: 58,
+      borderRadius: 8,
+      border: `3px solid ${COLORS.blue}`,
+      backgroundColor: bg,
+      color,
+      fontSize: "1.2rem",
+      textTransform: "uppercase",
+    };
+  };
+
+  // ----- SETUP SCREEN -----
   if (mode === "pre-stage") {
     return (
-      <Grid
-        container
-        direction="column"
-        spacing={3}
-        style={{ padding: 24, maxWidth: 400 }}
-      >
+      <Grid container direction="column" spacing={3} style={cardStyle}>
         <Grid item>
-          <Typography variant="h4">Word Guess</Typography>
-          <Typography variant="body1">
-            Guess the hidden word one letter at a time. Pick a letter for each
-            guess — if it's in the word, it'll be revealed; if not, you'll use
-            up one of your {maxWrong} misses. Guess the whole word before you
-            run out of misses to win.
+          <Typography style={bannerStyle(COLORS.blue, { fontSize: "2rem" })}>
+            HangCat
+          </Typography>
+          <Typography
+            variant="body1"
+            style={{ fontFamily: baseFont, lineHeight: 1.5, marginTop: 12 }}
+          >
+            Guess the random word! Pick one letter at a time, and if it's in the
+            word, it'll be shown in the correct position. If it's not, you'll be
+            using one of your {maxWrong} guesses. You'll be given points for
+            every word you guess correctly. The game ends once you've drawn the
+            cat! Good luck!
           </Typography>
         </Grid>
 
         <Grid item>
-          <Typography gutterBottom>Word Length: {charLength}</Typography>
+          <TextField
+            label="Your Name"
+            value={playerName}
+            onChange={(e) => setPlayerName(e.target.value)}
+            fullWidth
+            required
+          />
+        </Grid>
+
+        <Grid item>
+          <Typography
+            gutterBottom
+            style={{ fontFamily: baseFont, fontWeight: 700 }}
+          >
+            Word Length: {charLength}
+          </Typography>
           <Slider
             value={charLength}
             onChange={(e, value) => setCharLength(value)}
@@ -219,7 +312,12 @@ function App() {
         </Grid>
 
         <Grid item>
-          <Typography gutterBottom>Difficulty</Typography>
+          <Typography
+            gutterBottom
+            style={{ fontFamily: baseFont, fontWeight: 700 }}
+          >
+            Difficulty
+          </Typography>
           <Slider
             value={difficulty}
             onChange={(e, value) => setDifficulty(value)}
@@ -250,7 +348,11 @@ function App() {
         </Grid>
 
         <Grid item>
-          <Button variant="contained" onClick={startGame}>
+          <Button
+            onClick={startGame}
+            disabled={playerName.trim() === ""}
+            style={primaryButtonStyle}
+          >
             Start Game
           </Button>
         </Grid>
@@ -260,33 +362,88 @@ function App() {
 
   // ----- LOADING -----
   if (mode === "loading") {
-    return <Typography variant="h5">Loading word...</Typography>;
+    return (
+      <Grid
+        container
+        direction="column"
+        alignItems="center"
+        style={{ marginTop: 100 }}
+      >
+        <Typography
+          style={{
+            fontFamily: baseFont,
+            fontSize: "1.5rem",
+            color: COLORS.white,
+          }}
+        >
+          Loading word...
+        </Typography>
+      </Grid>
+    );
   }
 
   // ----- GAME OVER -----
   if (mode === "gameover") {
     return (
-      <Grid
-        container
-        direction="column"
-        spacing={2}
-        style={{ padding: 24, maxWidth: 500 }}
-      >
+      <Grid container direction="column" spacing={2} style={cardStyle}>
         <Grid item>
-          <Typography variant="h4">Game Over</Typography>
-          <Typography variant="h5">Final Score: {score}</Typography>
+          <Typography
+            style={bannerStyle(COLORS.orange, { fontSize: "1.8rem" })}
+          >
+            Game Over
+          </Typography>
+          <Typography
+            style={{
+              fontFamily: baseFont,
+              fontWeight: 700,
+              marginTop: 12,
+              color: COLORS.black,
+            }}
+          >
+            Nice game, {playerName}! Thansk for playing :)
+          </Typography>
+          <Typography
+            style={bannerStyle(COLORS.yellow, {
+              fontSize: "1.4rem",
+              marginTop: 8,
+            })}
+          >
+            Score: {score}
+          </Typography>
+        </Grid>
+        <Grid item style={{ display: "flex", justifyContent: "center" }}>
+          <img
+            src="https://media1.tenor.com/m/IdQJwgoeSNwAAAAd/pokemon-what.gif"
+            alt="confused Psyduck"
+            style={{
+              maxHeight: 160,
+              borderRadius: 12,
+              border: `3px solid ${COLORS.blue}`,
+            }}
+          />
         </Grid>
         <Grid item>
-          <Typography variant="h6">Words:</Typography>
+          <Typography
+            style={{
+              fontFamily: baseFont,
+              fontWeight: 700,
+              color: COLORS.black,
+            }}
+          >
+            Words:
+          </Typography>
           {wordHistory.map((entry, i) => (
-            <Typography key={i}>
-              {entry.word} —{" "}
-              {entry.solved ? `solved (+${entry.points})` : "not solved"}
+            <Typography
+              key={i}
+              style={{ fontFamily: baseFont, color: COLORS.black }}
+            >
+              {entry.solved ? "✓" : "✗"} {entry.word}
+              {entry.solved && ` (+${entry.points})`}
             </Typography>
           ))}
         </Grid>
         <Grid item>
-          <Button variant="contained" onClick={reset}>
+          <Button onClick={reset} style={primaryButtonStyle}>
             Play Again
           </Button>
         </Grid>
@@ -321,70 +478,145 @@ function App() {
           />
         </div>
       )}
-      <Typography gutterBottom variant="h1">
-        Word Guess
-      </Typography>
 
-      <Typography variant="h6">Score: {score}</Typography>
+      <Grid
+        container
+        direction="column"
+        alignItems="center"
+        style={{
+          padding: 24,
+          minHeight: "100vh",
+          justifyContent: "center",
+        }}
+      >
+        <Typography style={bannerStyle(COLORS.blue, { fontSize: "2rem" })}>
+          HangCat
+        </Typography>
 
-      {CAT_STAGES[wrongCount] && (
-        <img
-          src={CAT_STAGES[wrongCount]}
-          alt={`${wrongCount} wrong guesses`}
-          style={{ height: 150 }}
-        />
-      )}
+        <Typography
+          style={bannerStyle(COLORS.yellow, { marginTop: 12, marginBottom: 8 })}
+        >
+          Score: {score}
+        </Typography>
 
-      <Grid container spacing={1} style={{ margin: "16px 0" }}>
-        {word.split("").map((ch, i) => (
-          <Grid item key={i}>
-            <div
+        {CAT_STAGES[wrongCount] && (
+          <div
+            style={{
+              width: 300,
+              height: 360,
+              boxSizing: "border-box",
+              padding: 8,
+              backgroundColor: COLORS.white,
+              border: `3px solid ${COLORS.blue}`,
+              borderRadius: 12,
+              margin: "8px auto 16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden",
+            }}
+          >
+            <img
+              src={CAT_STAGES[wrongCount]}
+              alt={`${wrongCount} wrong guesses`}
               style={{
-                width: 40,
-                height: 40,
-                border: "2px solid black",
+                maxWidth: "100%",
+                maxHeight: "100%",
+                objectFit: "contain",
+                display: "block",
+              }}
+            />
+          </div>
+        )}
+
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 8,
+            justifyContent: "center",
+            width: "100%",
+            margin: "8px 0",
+          }}
+        >
+          {word.split("").map((ch, i) => {
+            const revealed = guessedLetters.includes(ch);
+            return (
+              <div
+                key={i}
+                style={{
+                  width: 44,
+                  height: 44,
+                  border: `3px solid ${COLORS.blue}`,
+                  borderRadius: 8,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textTransform: "uppercase",
+                  fontSize: 20,
+                  fontFamily: baseFont,
+                  fontWeight: 800,
+                  backgroundColor: revealed ? COLORS.yellow : COLORS.white,
+                  color: COLORS.black,
+                  animation: revealed ? "pop-in 0.3s ease" : "none",
+                }}
+              >
+                {revealed ? ch : ""}
+              </div>
+            );
+          })}
+        </div>
+
+        <Typography
+          style={{ fontFamily: baseFont, fontWeight: 700, color: COLORS.white }}
+        >
+          MISSED: {wrongCount} / {maxWrong}
+        </Typography>
+        <Typography
+          style={{
+            fontFamily: baseFont,
+            color: COLORS.white,
+            marginBottom: 12,
+          }}
+        >
+          INCORRECT GUESSES: {incorrectLetters.join(", ") || "none yet"}
+        </Typography>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 10,
+            marginTop: 8,
+            width: "100%",
+          }}
+        >
+          {keyboardRows.map((row, rowIndex) => (
+            <div
+              key={rowIndex}
+              style={{
                 display: "flex",
-                alignItems: "center",
+                gap: 10,
                 justifyContent: "center",
-                textTransform: "uppercase",
-                fontSize: 20,
+                flexWrap: "wrap",
               }}
             >
-              {guessedLetters.includes(ch) ? ch : ""}
-            </div>
-          </Grid>
-        ))}
-      </Grid>
-
-      <Typography>
-        Misses: {wrongCount} / {maxWrong}
-      </Typography>
-      <Typography>
-        Incorrect guesses: {incorrectLetters.join(", ") || "none yet"}
-      </Typography>
-
-      <Grid container direction="column" spacing={1} style={{ marginTop: 16 }}>
-        {keyboardRows.map((row, rowIndex) => (
-          <Grid
-            container
-            item
-            spacing={1}
-            key={rowIndex}
-            justifyContent="center"
-          >
-            {row.map((letter) => (
-              <Grid item key={letter}>
+              {row.map((letter) => (
                 <Button
-                  variant="outlined"
+                  key={letter}
+                  variant="contained"
+                  disableElevation
                   disabled={guessedLetters.includes(letter) || showCelebration}
                   onClick={() => guessLetter(letter)}
+                  style={getKeyStyle(letter)}
                 >
                   {letter}
                 </Button>
-              </Grid>
-            ))}
-          </Grid>
-        ))}
+              ))}
+            </div>
+          ))}
+        </div>
       </Grid>
     </>
   );
