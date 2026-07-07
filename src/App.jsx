@@ -89,6 +89,9 @@ function App() {
     "/catdrawings/5.png",
     "/catdrawings/6.png",
     "/catdrawings/7.png",
+    "/catdrawings/8.png",
+    "/catdrawings/9.png",
+    "/catdrawings/10.png",
   ];
 
   const DUCK_GIFS = [
@@ -115,6 +118,7 @@ function App() {
   const [usedWord, setUsedWord] = useState([]);
   const [playerName, setPlayerName] = useState("");
 
+  // keyboard display for different languages
   const KEYBOARD_LAYOUTS = {
     en: [
       ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
@@ -146,14 +150,17 @@ function App() {
     ],
   };
 
+  // defaults to english keyboard
   const keyboardRows = KEYBOARD_LAYOUTS[language] || KEYBOARD_LAYOUTS.en;
-  const maxWrong = 8;
+  const maxWrong = 11; // number of incorrect guesses
 
+  // fetches randomword from api based on user's settings and then starts playing mode once the word is retrieved
   const searchRandomWord = () => {
     setMode("loading");
     const pool = DIFFICULTY_POOLS[difficulty];
     const apiDiff = pool[Math.floor(Math.random() * pool.length)];
 
+    // fetch method makes request to server
     fetch(
       `https://random-word-api.herokuapp.com/word?length=${charLength}&diff=${apiDiff}&lang=${language}`,
     )
@@ -162,6 +169,7 @@ function App() {
         console.log(data);
         const newWord = data[0].toLowerCase();
 
+        // making sure the word hasnt already been used
         if (usedWord.includes(newWord)) {
           searchRandomWord();
           return;
@@ -175,6 +183,7 @@ function App() {
       .catch((error) => console.error(error));
   };
 
+  // resets game counters and gets first randomword
   const startGame = () => {
     setScore(0);
     setWrongCount(0);
@@ -183,32 +192,36 @@ function App() {
     searchRandomWord();
   };
 
+  // handles single letter clicks, updates guessed letters, tracks misses, detects solved word, triggers celebration or gameover
   const guessLetter = (letter) => {
+    // ignoring clicks if not playing
     if (mode !== "playing" || showCelebration) return;
 
     letter = letter.toLowerCase();
-    if (guessedLetters.includes(letter)) return;
+    if (guessedLetters.includes(letter)) return; // so user cant guess same user
 
     const nextGuessed = [...guessedLetters, letter];
     setGuessedLetters(nextGuessed);
 
     if (!word.includes(letter)) {
+      // adds one to counter and also checks for gameover
       const nextWrong = wrongCount + 1;
       setWrongCount(nextWrong);
 
       if (nextWrong >= maxWrong) {
-        // out of guesses entirely — record this word as unsolved and end the game
+        // out of guesses, so record this word as unsolved and end the game
         setWordHistory((prev) => [...prev, { word, solved: false, points: 0 }]);
         setMode("gameover");
       }
     } else {
+      // the guess is correct, so we're checking whether every letter in shown
       const solved = word.split("").every((ch) => nextGuessed.includes(ch));
       if (solved) {
         const points = word.length * difficulty;
         setScore((prev) => prev + points);
         setWordHistory((prev) => [...prev, { word, solved: true, points }]);
 
-        // celebrate!
+        // celebrate!!!! ducks andd confetti
         const randomGif =
           DUCK_GIFS[Math.floor(Math.random() * DUCK_GIFS.length)];
         setCelebrationGif(randomGif);
@@ -231,8 +244,10 @@ function App() {
   // if randomword does not include letter, then wrongguess++
   // display word = randomword
 
+  // returns to setup screen
   const reset = () => setMode("pre-stage");
 
+  // this is the visual state
   const getKeyStyle = (letter) => {
     const used = guessedLetters.includes(letter);
     const wrong = used && !word.includes(letter);
@@ -263,7 +278,8 @@ function App() {
     };
   };
 
-  // ----- SETUP SCREEN -----
+  // SETUP SCREEN!
+  // gets name, word length, difficulty, and language
   if (mode === "pre-stage") {
     return (
       <Grid container direction="column" spacing={3} style={cardStyle}>
@@ -283,6 +299,7 @@ function App() {
           </Typography>
         </Grid>
 
+        {/* player name required*/}
         <Grid item>
           <TextField
             label="Your Name"
@@ -361,6 +378,7 @@ function App() {
   }
 
   // ----- LOADING -----
+  // shown when fetching the word from api
   if (mode === "loading") {
     return (
       <Grid
@@ -383,6 +401,7 @@ function App() {
   }
 
   // ----- GAME OVER -----
+  // when wrongCount reaches maxWrong
   if (mode === "gameover") {
     return (
       <Grid container direction="column" spacing={2} style={cardStyle}>
@@ -400,7 +419,7 @@ function App() {
               color: COLORS.black,
             }}
           >
-            Nice game, {playerName}! Thansk for playing :)
+            Nice game, {playerName}! Thanks for playing :)
           </Typography>
           <Typography
             style={bannerStyle(COLORS.yellow, {
