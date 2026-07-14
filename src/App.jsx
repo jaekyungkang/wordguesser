@@ -11,53 +11,130 @@ import FormControl from "@mui/material/FormControl";
 
 import confetti from "canvas-confetti";
 
-const baseFont = "'Nunito', 'Helvetica Neue', Arial, sans-serif";
+// ---------------------------------------------------------------------------
+// DESIGN TOKENS
+// A restrained, professional palette: deep navy for structure, a muted gold
+// for "correct" states and a muted rust for "incorrect" states (instead of
+// saturated primary blue / yellow / orange). Sora carries headings, Inter
+// carries body copy and controls, and IBM Plex Mono is reserved for the
+// game's "data" — score, miss count, and the letter tiles — so the numbers
+// read like a scoreboard rather than decoration.
+// ---------------------------------------------------------------------------
+
+const displayFont = "'Sora', 'Helvetica Neue', Arial, sans-serif";
+const bodyFont = "'Inter', 'Helvetica Neue', Arial, sans-serif";
+const monoFont = "'IBM Plex Mono', 'SFMono-Regular', Menlo, monospace";
 
 const COLORS = {
-  blue: "#1D4ED8",
-  yellow: "#FBBF24",
-  orange: "#F97316",
-  black: "#111111",
+  ink: "#1C2333",
+  paper: "#F6F6F3",
+  card: "#FFFFFF",
+  primary: "#1E3A5F",
+  primaryDark: "#152A45",
+  primarySoft: "#E9EEF3",
+  gold: "#B08A2E",
+  goldSoft: "#F6ECD3",
+  rust: "#96453A",
+  rustSoft: "#F3E2DF",
+  border: "#E2E4E8",
+  muted: "#6B7280",
   white: "#FFFFFF",
 };
 
-// picks white text for blue/orange backgrounds, black text for yellow —
-// so every colored surface automatically gets a readable text color
-const bannerStyle = (bg, extra = {}) => ({
-  display: "inline-block",
-  backgroundColor: bg,
-  color: bg === COLORS.yellow ? COLORS.black : COLORS.white,
-  padding: "6px 20px",
-  borderRadius: 8,
-  fontFamily: baseFont,
-  fontWeight: 800,
-  ...extra,
-});
+const pageWrapperStyle = {
+  minHeight: "100vh",
+  width: "100%",
+  backgroundColor: COLORS.paper,
+  fontFamily: bodyFont,
+};
 
 const cardStyle = {
-  padding: 32,
+  padding: 40,
   maxWidth: 460,
   margin: "48px auto",
-  backgroundColor: COLORS.white,
-  border: `4px solid ${COLORS.blue}`,
+  backgroundColor: COLORS.card,
+  border: `1px solid ${COLORS.border}`,
   borderRadius: 16,
-  fontFamily: baseFont,
-  color: COLORS.black,
+  boxShadow: "0 1px 2px rgba(28,35,51,0.04), 0 12px 32px rgba(28,35,51,0.06)",
+  fontFamily: bodyFont,
+  color: COLORS.ink,
+};
+
+// small uppercase, letter-spaced eyebrow used above form fields/sections
+const eyebrowStyle = {
+  fontFamily: monoFont,
+  fontSize: "0.72rem",
+  fontWeight: 600,
+  letterSpacing: "0.09em",
+  textTransform: "uppercase",
+  color: COLORS.muted,
+  marginBottom: 6,
+  display: "block",
+};
+
+// the page/game title: display face + a thin gold rule as the signature mark
+const titleBlockStyle = {
+  fontFamily: displayFont,
+  fontWeight: 800,
+  fontSize: "1.9rem",
+  color: COLORS.primary,
+  letterSpacing: "-0.02em",
+  margin: 0,
+};
+
+const titleRuleStyle = {
+  width: 44,
+  height: 3,
+  backgroundColor: COLORS.gold,
+  borderRadius: 2,
+  margin: "10px 0 0 0",
 };
 
 const primaryButtonStyle = {
-  backgroundColor: COLORS.blue,
+  backgroundColor: COLORS.primary,
   color: COLORS.white,
-  fontFamily: baseFont,
-  fontSize: "1.1rem",
-  fontWeight: 700,
-  borderRadius: 8,
-  border: `2px solid ${COLORS.blue}`,
-  padding: "8px 24px",
+  fontFamily: bodyFont,
+  fontSize: "1rem",
+  fontWeight: 600,
+  borderRadius: 10,
+  border: "none",
+  padding: "10px 28px",
   textTransform: "none",
+  boxShadow: "0 1px 2px rgba(21,42,69,0.15), 0 6px 16px rgba(21,42,69,0.18)",
+};
+
+// a small "stat" readout (Score / Missed) rendered in mono, scoreboard-style
+const statLabelStyle = {
+  fontFamily: monoFont,
+  fontSize: "0.7rem",
+  fontWeight: 600,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  color: COLORS.muted,
+};
+
+const statValueStyle = {
+  fontFamily: monoFont,
+  fontSize: "1.15rem",
+  fontWeight: 700,
+  color: COLORS.ink,
 };
 
 function App() {
+  // load the two Google Fonts used by the design tokens above. Safe no-op
+  // if it can't reach the network — the stacks fall back to system fonts.
+  useEffect(() => {
+    const id = "hangcat-font-link";
+    if (!document.getElementById(id)) {
+      const link = document.createElement("link");
+      link.id = id;
+      link.rel = "stylesheet";
+      link.href =
+        "https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap";
+      document.head.appendChild(link);
+    }
+  }, []);
+
   // i want difficulties to be a slider
   const DIFFICULTIES = [
     { value: 1, label: "Easy" },
@@ -81,7 +158,7 @@ function App() {
   ];
 
   const CAT_STAGES = [
-    null, // this is when theyre are 0 wrong guesses
+    "/catdrawings/0.png", // this is when theyre are 0 wrong guesses
     "/catdrawings/1.png",
     "/catdrawings/2.png",
     "/catdrawings/3.png",
@@ -254,27 +331,32 @@ function App() {
     const correct = used && !wrong;
 
     let bg = COLORS.white;
-    let color = COLORS.black;
+    let color = COLORS.ink;
+    let borderColor = COLORS.border;
     if (correct) {
-      bg = COLORS.yellow;
-      color = COLORS.black;
+      bg = COLORS.goldSoft;
+      color = COLORS.ink;
+      borderColor = COLORS.gold;
     }
     if (wrong) {
-      bg = COLORS.orange;
-      color = COLORS.white;
+      bg = COLORS.rustSoft;
+      color = COLORS.rust;
+      borderColor = COLORS.rust;
     }
 
     return {
-      fontFamily: baseFont,
-      fontWeight: 700,
-      minWidth: 56,
-      height: 58,
+      fontFamily: monoFont,
+      fontWeight: 600,
+      minWidth: 52,
+      height: 52,
       borderRadius: 8,
-      border: `3px solid ${COLORS.blue}`,
+      border: `1.5px solid ${borderColor}`,
       backgroundColor: bg,
       color,
-      fontSize: "1.2rem",
+      fontSize: "1.05rem",
       textTransform: "uppercase",
+      boxShadow: used ? "none" : "0 1px 2px rgba(28,35,51,0.05)",
+      transition: "background-color 0.15s ease, border-color 0.15s ease",
     };
   };
 
@@ -282,98 +364,122 @@ function App() {
   // gets name, word length, difficulty, and language
   if (mode === "pre-stage") {
     return (
-      <Grid container direction="column" spacing={3} style={cardStyle}>
-        <Grid item>
-          <Typography style={bannerStyle(COLORS.blue, { fontSize: "2rem" })}>
-            HangCat
-          </Typography>
-          <Typography
-            variant="body1"
-            style={{ fontFamily: baseFont, lineHeight: 1.5, marginTop: 12 }}
-          >
-            Guess the random word! Pick one letter at a time, and if it's in the
-            word, it'll be shown in the correct position. If it's not, you'll be
-            using one of your {maxWrong} guesses. You'll be given points for
-            every word you guess correctly. The game ends once you've drawn the
-            cat! Good luck!
-          </Typography>
-        </Grid>
-
-        {/* player name required*/}
-        <Grid item>
-          <TextField
-            label="Your Name"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-            fullWidth
-            required
-          />
-        </Grid>
-
-        <Grid item>
-          <Typography
-            gutterBottom
-            style={{ fontFamily: baseFont, fontWeight: 700 }}
-          >
-            Word Length: {charLength}
-          </Typography>
-          <Slider
-            value={charLength}
-            onChange={(e, value) => setCharLength(value)}
-            min={5}
-            max={15}
-            step={1}
-            marks
-            valueLabelDisplay="auto"
-          />
-        </Grid>
-
-        <Grid item>
-          <Typography
-            gutterBottom
-            style={{ fontFamily: baseFont, fontWeight: 700 }}
-          >
-            Difficulty
-          </Typography>
-          <Slider
-            value={difficulty}
-            onChange={(e, value) => setDifficulty(value)}
-            min={1}
-            max={3}
-            step={1}
-            marks={DIFFICULTIES}
-            valueLabelDisplay="auto"
-          />
-        </Grid>
-
-        <Grid item>
-          <FormControl fullWidth>
-            <InputLabel id="language-label">Language</InputLabel>
-            <Select
-              labelId="language-label"
-              value={language}
-              label="Language"
-              onChange={(e) => setLanguage(e.target.value)}
+      <div style={pageWrapperStyle}>
+        <Grid container direction="column" spacing={3} style={cardStyle}>
+          <Grid item>
+            <Typography component="div" style={titleBlockStyle}>
+              HangCat
+            </Typography>
+            <div style={titleRuleStyle} />
+            <Typography
+              variant="body1"
+              style={{
+                fontFamily: bodyFont,
+                lineHeight: 1.6,
+                marginTop: 16,
+                color: COLORS.muted,
+                fontSize: "0.95rem",
+              }}
             >
-              {LANGUAGES.map((lang) => (
-                <MenuItem key={lang.name} value={lang.name}>
-                  {lang.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
+              Guess the random word! Pick one letter at a time, and if it's in
+              the word, it'll be shown in the correct position. If it's not,
+              you'll be using one of your {maxWrong} guesses. You'll be given
+              points for every word you guess correctly. The game ends once
+              you've drawn the cat! Good luck!
+            </Typography>
+          </Grid>
 
-        <Grid item>
-          <Button
-            onClick={startGame}
-            disabled={playerName.trim() === ""}
-            style={primaryButtonStyle}
-          >
-            Start Game
-          </Button>
+          {/* player name required*/}
+          <Grid item>
+            <span style={eyebrowStyle}>Player</span>
+            <TextField
+              label="Your Name"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              fullWidth
+              required
+              size="small"
+            />
+          </Grid>
+
+          <Grid item>
+            <Typography
+              gutterBottom
+              style={{
+                fontFamily: bodyFont,
+                fontWeight: 600,
+                color: COLORS.ink,
+                fontSize: "0.9rem",
+              }}
+            >
+              Word Length:{" "}
+              <span style={{ fontFamily: monoFont }}>{charLength}</span>
+            </Typography>
+            <Slider
+              value={charLength}
+              onChange={(e, value) => setCharLength(value)}
+              min={5}
+              max={15}
+              step={1}
+              marks
+              valueLabelDisplay="auto"
+              sx={{ color: COLORS.primary }}
+            />
+          </Grid>
+
+          <Grid item>
+            <Typography
+              gutterBottom
+              style={{
+                fontFamily: bodyFont,
+                fontWeight: 600,
+                color: COLORS.ink,
+                fontSize: "0.9rem",
+              }}
+            >
+              Difficulty
+            </Typography>
+            <Slider
+              value={difficulty}
+              onChange={(e, value) => setDifficulty(value)}
+              min={1}
+              max={3}
+              step={1}
+              marks={DIFFICULTIES}
+              valueLabelDisplay="auto"
+              sx={{ color: COLORS.primary }}
+            />
+          </Grid>
+
+          <Grid item>
+            <FormControl fullWidth size="small">
+              <InputLabel id="language-label">Language</InputLabel>
+              <Select
+                labelId="language-label"
+                value={language}
+                label="Language"
+                onChange={(e) => setLanguage(e.target.value)}
+              >
+                {LANGUAGES.map((lang) => (
+                  <MenuItem key={lang.name} value={lang.name}>
+                    {lang.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item>
+            <Button
+              onClick={startGame}
+              disabled={playerName.trim() === ""}
+              style={primaryButtonStyle}
+            >
+              Start Game
+            </Button>
+          </Grid>
         </Grid>
-      </Grid>
+      </div>
     );
   }
 
@@ -381,22 +487,26 @@ function App() {
   // shown when fetching the word from api
   if (mode === "loading") {
     return (
-      <Grid
-        container
-        direction="column"
-        alignItems="center"
-        style={{ marginTop: 100 }}
-      >
-        <Typography
-          style={{
-            fontFamily: baseFont,
-            fontSize: "1.5rem",
-            color: COLORS.white,
-          }}
+      <div style={pageWrapperStyle}>
+        <Grid
+          container
+          direction="column"
+          alignItems="center"
+          style={{ paddingTop: 120 }}
         >
-          Loading word...
-        </Typography>
-      </Grid>
+          <Typography
+            style={{
+              fontFamily: monoFont,
+              fontSize: "1rem",
+              fontWeight: 600,
+              letterSpacing: "0.04em",
+              color: COLORS.muted,
+            }}
+          >
+            Loading word…
+          </Typography>
+        </Grid>
+      </div>
     );
   }
 
@@ -404,69 +514,87 @@ function App() {
   // when wrongCount reaches maxWrong
   if (mode === "gameover") {
     return (
-      <Grid container direction="column" spacing={2} style={cardStyle}>
-        <Grid item>
-          <Typography
-            style={bannerStyle(COLORS.orange, { fontSize: "1.8rem" })}
-          >
-            Game Over
-          </Typography>
-          <Typography
-            style={{
-              fontFamily: baseFont,
-              fontWeight: 700,
-              marginTop: 12,
-              color: COLORS.black,
-            }}
-          >
-            Nice game, {playerName}! Thanks for playing :)
-          </Typography>
-          <Typography
-            style={bannerStyle(COLORS.yellow, {
-              fontSize: "1.4rem",
-              marginTop: 8,
-            })}
-          >
-            Score: {score}
-          </Typography>
-        </Grid>
-        <Grid item style={{ display: "flex", justifyContent: "center" }}>
-          <img
-            src="https://media1.tenor.com/m/IdQJwgoeSNwAAAAd/pokemon-what.gif"
-            alt="confused Psyduck"
-            style={{
-              maxHeight: 160,
-              borderRadius: 12,
-              border: `3px solid ${COLORS.blue}`,
-            }}
-          />
-        </Grid>
-        <Grid item>
-          <Typography
-            style={{
-              fontFamily: baseFont,
-              fontWeight: 700,
-              color: COLORS.black,
-            }}
-          >
-            Words:
-          </Typography>
-          {wordHistory.map((entry, i) => (
+      <div style={pageWrapperStyle}>
+        <Grid container direction="column" spacing={2} style={cardStyle}>
+          <Grid item>
+            <span style={eyebrowStyle}>Game Over</span>
             <Typography
-              key={i}
-              style={{ fontFamily: baseFont, color: COLORS.black }}
+              component="div"
+              style={{
+                ...titleBlockStyle,
+                fontSize: "1.7rem",
+                color: COLORS.rust,
+              }}
             >
-              {entry.solved ? "✓" : "✗"} {entry.word}
-              {entry.solved && ` (+${entry.points})`}
+              Nice game, {playerName}
             </Typography>
-          ))}
+            <Typography
+              style={{
+                fontFamily: bodyFont,
+                color: COLORS.muted,
+                marginTop: 6,
+                fontSize: "0.95rem",
+              }}
+            >
+              Thanks for playing :)
+            </Typography>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                gap: 8,
+                marginTop: 20,
+                paddingTop: 16,
+                borderTop: `1px solid ${COLORS.border}`,
+              }}
+            >
+              <span style={statLabelStyle}>Score</span>
+              <span style={{ ...statValueStyle, fontSize: "1.4rem" }}>
+                {score}
+              </span>
+            </div>
+          </Grid>
+          <Grid item style={{ display: "flex", justifyContent: "center" }}>
+            <img
+              src="https://media1.tenor.com/m/IdQJwgoeSNwAAAAd/pokemon-what.gif"
+              alt="confused Psyduck"
+              style={{
+                maxHeight: 150,
+                borderRadius: 12,
+                border: `1px solid ${COLORS.border}`,
+              }}
+            />
+          </Grid>
+          <Grid item>
+            <span style={eyebrowStyle}>Words</span>
+            {wordHistory.map((entry, i) => (
+              <Typography
+                key={i}
+                style={{
+                  fontFamily: monoFont,
+                  fontSize: "0.9rem",
+                  color: entry.solved ? COLORS.ink : COLORS.muted,
+                  padding: "3px 0",
+                }}
+              >
+                <span
+                  style={{ color: entry.solved ? COLORS.gold : COLORS.rust }}
+                >
+                  {entry.solved ? "✓" : "✗"}
+                </span>{" "}
+                {entry.word}
+                {entry.solved && ` (+${entry.points})`}
+              </Typography>
+            ))}
+          </Grid>
+          <Grid item>
+            <Button onClick={reset} style={primaryButtonStyle}>
+              Play Again
+            </Button>
+          </Grid>
         </Grid>
-        <Grid item>
-          <Button onClick={reset} style={primaryButtonStyle}>
-            Play Again
-          </Button>
-        </Grid>
-      </Grid>
+      </div>
     );
   }
 
@@ -474,7 +602,7 @@ function App() {
   const incorrectLetters = guessedLetters.filter((l) => !word.includes(l));
 
   return (
-    <>
+    <div style={pageWrapperStyle}>
       {showCelebration && (
         <div
           style={{
@@ -483,7 +611,7 @@ function App() {
             left: 0,
             width: "100%",
             height: "100%",
-            background: "rgba(0,0,0,0.6)",
+            background: "rgba(28,35,51,0.55)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -493,7 +621,7 @@ function App() {
           <img
             src={celebrationGif}
             alt="celebration"
-            style={{ maxHeight: "60%" }}
+            style={{ maxHeight: "60%", borderRadius: 12 }}
           />
         </div>
       )}
@@ -508,27 +636,50 @@ function App() {
           justifyContent: "center",
         }}
       >
-        <Typography style={bannerStyle(COLORS.blue, { fontSize: "2rem" })}>
+        <Typography component="div" style={titleBlockStyle}>
           HangCat
         </Typography>
+        <div style={titleRuleStyle} />
 
-        <Typography
-          style={bannerStyle(COLORS.yellow, { marginTop: 12, marginBottom: 8 })}
+        <div
+          style={{
+            display: "flex",
+            gap: 28,
+            marginTop: 18,
+            marginBottom: 8,
+          }}
         >
-          Score: {score}
-        </Typography>
+          <div style={{ textAlign: "center" }}>
+            <div style={statLabelStyle}>Score</div>
+            <div style={statValueStyle}>{score}</div>
+          </div>
+          <div style={{ width: 1, backgroundColor: COLORS.border }} />
+          <div style={{ textAlign: "center" }}>
+            <div style={statLabelStyle}>Missed</div>
+            <div
+              style={{
+                ...statValueStyle,
+                color: wrongCount > 0 ? COLORS.rust : COLORS.ink,
+              }}
+            >
+              {wrongCount} / {maxWrong}
+            </div>
+          </div>
+        </div>
 
         {CAT_STAGES[wrongCount] && (
           <div
             style={{
-              width: 300,
-              height: 360,
+              width: 280,
+              height: 320,
               boxSizing: "border-box",
               padding: 8,
-              backgroundColor: COLORS.white,
-              border: `3px solid ${COLORS.blue}`,
+              backgroundColor: COLORS.card,
+              border: `1px solid ${COLORS.border}`,
               borderRadius: 12,
-              margin: "8px auto 16px",
+              boxShadow:
+                "0 1px 2px rgba(28,35,51,0.04), 0 8px 20px rgba(28,35,51,0.05)",
+              margin: "8px auto 20px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -555,6 +706,7 @@ function App() {
             gap: 8,
             justifyContent: "center",
             width: "100%",
+            maxWidth: 460,
             margin: "8px 0",
           }}
         >
@@ -564,20 +716,21 @@ function App() {
               <div
                 key={i}
                 style={{
-                  width: 44,
-                  height: 44,
-                  border: `3px solid ${COLORS.blue}`,
+                  width: 42,
+                  height: 42,
+                  border: `1.5px solid ${revealed ? COLORS.gold : COLORS.border}`,
                   borderRadius: 8,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   textTransform: "uppercase",
-                  fontSize: 20,
-                  fontFamily: baseFont,
-                  fontWeight: 800,
-                  backgroundColor: revealed ? COLORS.yellow : COLORS.white,
-                  color: COLORS.black,
-                  animation: revealed ? "pop-in 0.3s ease" : "none",
+                  fontSize: 19,
+                  fontFamily: monoFont,
+                  fontWeight: 700,
+                  backgroundColor: revealed ? COLORS.goldSoft : COLORS.card,
+                  color: COLORS.ink,
+                  transition:
+                    "background-color 0.2s ease, border-color 0.2s ease",
                 }}
               >
                 {revealed ? ch : ""}
@@ -587,18 +740,17 @@ function App() {
         </div>
 
         <Typography
-          style={{ fontFamily: baseFont, fontWeight: 700, color: COLORS.white }}
-        >
-          MISSED: {wrongCount} / {maxWrong}
-        </Typography>
-        <Typography
           style={{
-            fontFamily: baseFont,
-            color: COLORS.white,
-            marginBottom: 12,
+            fontFamily: monoFont,
+            fontSize: "0.85rem",
+            color: COLORS.muted,
+            marginTop: 10,
+            marginBottom: 20,
+            textAlign: "center",
+            letterSpacing: "0.02em",
           }}
         >
-          INCORRECT GUESSES: {incorrectLetters.join(", ") || "none yet"}
+          Incorrect guesses: {incorrectLetters.join(", ") || "none yet"}
         </Typography>
 
         <div
@@ -616,7 +768,7 @@ function App() {
               key={rowIndex}
               style={{
                 display: "flex",
-                gap: 10,
+                gap: 8,
                 justifyContent: "center",
                 flexWrap: "wrap",
               }}
@@ -637,7 +789,7 @@ function App() {
           ))}
         </div>
       </Grid>
-    </>
+    </div>
   );
 }
 
